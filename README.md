@@ -1,4 +1,3 @@
-# Used BMW car Prices
 
 The dataset consists of 5000 rows and 18 columns.
 
