@@ -1,0 +1,267 @@
+# Librarys
+
+library(dplyr)
+library(ggplot2)
+library(ggcorrplot)
+library(plotly)
+
+
+# Loading Data
+
+df <- read.csv('data.csv')
+
+df <- na.omit(df)
+
+## Analyzing the basic structure of the data set
+
+summary(df)
+
+# Data Cleaning
+
+## Dropping row with negative mileage and horse power
+
+df <- df[!(df$mileage < 0 | df$engine_power == 0),]
+
+## Changing True/False to 1/0 for feature1 to feature8
+
+df$feature_1 <- as.integer(df$feature_1)
+df$feature_2 <- as.integer(df$feature_2)
+df$feature_3 <- as.integer(df$feature_3)
+df$feature_4 <- as.integer(df$feature_4)
+df$feature_5 <- as.integer(df$feature_5)
+df$feature_6 <- as.integer(df$feature_6)
+df$feature_7 <- as.integer(df$feature_7)
+df$feature_8 <- as.integer(df$feature_8)
+
+
+## Creating a new column to reprsent the age of the car
+
+df$sold_at <- as.Date(df$sold_at)
+df$registration_date <- as.Date(df$registration_date)
+
+df$age <- df$sold_at - df$registration_date
+
+df$age <- as.numeric(df$age)
+
+## Removing registration date and selling date columns
+
+df <- df[, !(names(df) %in% c('registration_date', 'sold_at'))]
+
+
+## removing fuel types not needed for this analysis
+
+df <- df[!(df$fuel == 'hybrid_petrol' | df$fuel == 'electro'),]
+
+
+# Analysis
+
+## Correlation
+
+## Correlation Test
+
+## Price and Age
+res <- cor.test(df$price, df$age, method='pearson')
+res$estimate
+
+## Price and Age have a slight negative relationship, i.e every time age decreases the price increases
+
+## Price and Mileage
+
+res <- cor.test(df$price, df$mileage, method='pearson')
+res$estimate
+
+## Price and Mileage have a slight negative relationship, i.e every time mileage decreases the price increases
+
+res <- cor.test(df$price, df$engine_power, method='pearson')
+res$estimate
+
+## Price and Mileage have a good positive relationship, i.e every time engine power increases the price also increases
+
+## Correlation plot
+
+factors <- df[,c('mileage', 'engine_power', 'feature_1', 'feature_2', 'feature_3', 'feature_4', 'feature_5', 'feature_6', 'feature_7', 'feature_8', 'price', 'age')]
+
+corr <- cor(factors)
+p.mat <- cor_pmat(factors)
+corr.plot <- ggcorrplot(corr, hc.order = FALSE, type = "lower", outline.col = "white", p.mat = p.mat)
+ggplotly(corr.plot)
+
+# As can be seen there seem to be no evidence of multi-collinearity as no variables is correlated to each other significantly.
+# We can also see that correlation coefficient of any independent variable to the dependent price variable is not higher than 0.65
+# and hence we can say that none of the independent variables have particularly strong relationship with the price variable.
+
+## ANOVA
+
+one.way <- aov(price ~ fuel, data = df)
+
+summary(one.way)
+
+## The f-statistic for fuel is 4.578, hence it is more likey it is the variation casued by
+## the variable fuel to price is due to chance
+
+two.way <- aov(price ~ mileage + age, data = df)
+
+summary(two.way)
+
+## Here, the f-statistic for mileage and age is high
+## Hence, it is more likey that the variation caused by these variables
+## to price are real and not due to chance.
+
+## Scatter plot of features with highest correlation
+
+# Regression plot for price and engine power
+
+df1 <- sample_n(df, 500)
+fit <- lm(price ~ engine_power, data = df1)
+
+fig <- df1 %>%
+  plot_ly(x = ~engine_power, y = ~price, size = ~price, color = ~price, type = 'scatter', mode = 'markers', alpha=0.75, name='Scatter points') %>%
+  layout(title = "Engine Power vs Price",
+         xaxis = list(title = 'Engine Power', dtick=20, range= c(60, 350)),
+         yaxis = list(title = 'Price', dtick=10000, range = c(0, 80000))) %>%
+  add_trace(x = ~engine_power, y = fitted(fit), mode = 'lines', alpha = 1, line = list(color = '#F2CE16', width = 4), name='Regression Line')
+fig
+
+# Regression plot for price and mileage
+
+fit <- lm(price ~ mileage, data = df1)
+
+fig <- df1 %>%
+  plot_ly(x = ~mileage, y = ~price, size = ~price, color = ~price, type = 'scatter', mode = 'markers', alpha=0.75, name='Scatter points') %>%
+  layout(title = "Mileage vs Price",
+         xaxis = list(title = 'Mileage', dtick=30000, range= c(0, 400000)),
+         yaxis = list(title = 'Price', dtick=10000, range = c(0, 80000))) %>%
+  add_trace(x = ~mileage, y = fitted(fit), mode = 'lines', alpha = 1, line = list(color = '#F2CE16', width = 4), name='Regression Line')
+fig
+
+
+# Regression plot for price and age
+
+fit <- lm(price ~ age, data = df1)
+
+fig <- df1 %>%
+  plot_ly(x = ~age, y = ~price, size = ~price, color = ~price, type = 'scatter', mode = 'markers', alpha=0.75, name='Scatter points') %>%
+  layout(title = "Mileage vs Price",
+         xaxis = list(title = 'Mileage', dtick=1000, range= c(0, 6000)),
+         yaxis = list(title = 'Price', dtick=10000, range = c(0, 80000))) %>%
+  add_trace(x = ~age, y = fitted(fit), mode = 'lines', alpha = 1, line = list(color = '#F2CE16', width = 4), name='Regression Line')
+fig
+
+## Independent variables age, mileage, engine power are some what related to dependent variable price
+## However, there seem to be many outliers
+
+# Formal test
+
+## 1. Set up the hypotheses and select the alpha level
+## H0:βPredictors = 0 (None of the Independent variables are not Predictors of Price)
+## H1:H0: βPredictors ≠ 0 (at least one of the slope coefficients is different than 0 and is a predictor of Price)
+## α = 0.05
+
+## 2. Select the appropriate test statistic
+## we are going to use a F-test statistic.
+
+## 3.State the decision rule
+
+## Reject H0 if p−value<=α. Otherwise, do not reject H0
+
+## 4. Compute the test statistic and the associated p-value.
+
+
+factors <- df[,c('mileage', 'fuel', 'model_key',  'engine_power', 'feature_1', 'feature_2', 'feature_3', 'feature_4', 'feature_5', 'feature_6', 'feature_7', 'feature_8', 'price', 'age')]
+
+m <- lm(formula = price ~ mileage + engine_power + age , data = factors)
+
+summary(m)
+
+## p-value = less than 2.2e-16
+## R-squared value = 0.61
+
+## 5. Conclusion.
+
+# Reject H0, since p <= 0.05. We have sufficient evidence at the
+# significance level that there is a linear association between price and other independent variables.
+
+
+# From the above test we can conclude that some variables are predictors of price.
+# we now create a new model to check if all variables are predictors of price and check the effect on R-squared value.
+
+m <- lm(formula = price ~ ., data = factors)
+summary(m)
+
+## As seen from the model above, The R sqaured value increased when we used all the features
+## Hence, the model is much more concice using all the factors
+
+# Residual Analysis
+
+res = resid(m)
+fig <- plot_ly(x = fitted(m), y = res, type = 'scatter', mode = 'markers', alpha=0.75) %>%
+  layout(title = "Residual vs Fitted values",
+         xaxis = list(title = 'Fitted values', dtick=10000, range= c(-10000, 80000)),
+         yaxis = list(title = 'Residual', dtick=10000, range = c(-20000, 20000)))
+fig
+
+## As evident from the plot above, there appears to be no apparent association between
+## data points and the model seems to be good.
+
+## The residuals, even though they are clustered with some outliners, seems reasonable.
+
+
+## Finding outliers
+
+boxplot(df$price)$out
+
+## Visualizing outliers
+
+fig <- plot_ly(y = df$price, type = 'box', mode = 'markers', alpha=0.75)
+fig
+
+## Eliminating outliers
+
+Q <- quantile(df$price, probs=c(.25, .75), na.rm = FALSE)
+
+iqr <- IQR(df$price)
+
+up <-  Q[2] + 1.5 * iqr
+low <- Q[1] - 1.5 * iqr
+
+df2 <- subset(factors, df$price > (Q[1] - 1.5*iqr) & df$price < (Q[2]+1.5*iqr))
+
+## Linear model after elimination of outliers
+
+## Test and Train split
+
+df3 = sort(sample(nrow(df2), nrow(df2)*0.7))
+train <- df2[df3,]
+test<- df2[-df3,]
+
+m <- lm(formula = price ~ ., data = train)
+summary(m)
+
+result <- data.frame(Actual=train$price, Predicted=predict(m))
+head(result)
+
+
+## When we remove the outliers and construct our final linear model with the features,
+## it is evident that the R-squared has improved even more.
+
+## Even though 0.77 can be an acceptable performance, our model performed poorly on lower priced cars
+## however, a better sampling/splitting method could result in even better performance.
+
+
+
+# Summary
+
+## When sampling the dataset some variables were not sampled properly like
+## fuel type electro and hybrid. Hence, they were removed
+
+## Some columns with boolean values needed to be changed to numeric for linear regression to work.
+## Some of the values for price column were zero, which is not possible.
+
+## When analysing correlations, we found that fuel type was not a major predictor of price.
+## and model type was a major predictor. We found this by trial and error because model_key is a
+## categorical variable
+
+## Even though 0.77 can be an acceptable performance, our model performed poorly on lower priced cars
+## however, a better sampling/splitting method could result in even better performance.
+
+## In conclusion, our model was better than flipping a coin in predicting the price of a used car.
