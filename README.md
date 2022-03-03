@@ -6,6 +6,6 @@ The data contains 5000 BMW cars that were sold via a auction in 2018. There are 
 The dataset: https://www.kaggle.com/danielkyrka/bmw-pricing-challenge
 
 
-Introduction on [Goodbyeweekend.io](www.google.com)
+Introduction on [Goodbyeweekend.io](https://www.goodbyeweekend.io/projects/prediction-bmw-prices-in-r)
 
 View code on [Rpub](https://rpubs.com/vineetver/872494)
