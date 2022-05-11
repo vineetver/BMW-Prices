@@ -1,8 +1,9 @@
-# Librarys
+## 1) Libraries
 
 ```{r setup, include=FALSE} 
-knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
+
 
 ```{r echo = TRUE}
 library(dplyr)
@@ -11,99 +12,83 @@ library(ggcorrplot)
 library(plotly)
 ```
 
-## Loading Data
-
+## 2) Loading Data
 ```{r}
 df <- read.csv('data.csv')
 
+# Remove NA values
 df <- na.omit(df)
-```
 
-## Analyzing the basic structure of the data set
-
-```{r}
+# Basic statistics of the data
 summary(df)
 ```
 
-## Data Cleaning
+## 3) Preprocessing
 
-##### Dropping row with negative mileage and horse power
+
 
 ```{r}
+
+# Drop row with negative mileage and horse power, because they cannot be negative
 df <- df[!(df$mileage < 0 | df$engine_power == 0),]
-```
 
-##### Changing True/False to 1/0 for feature1 to feature8
-
-```{r}
+# Change True/False to 1/0 for feature1 to feature8
 df$feature_1 <- as.integer(df$feature_1)
 df$feature_2 <- as.integer(df$feature_2)
 df$feature_3 <- as.integer(df$feature_3)
 df$feature_4 <- as.integer(df$feature_4)
 df$feature_5 <- as.integer(df$feature_5)
 df$feature_6 <- as.integer(df$feature_6)
-df$feature_7 <- as.integer(df$feature_7)
-df$feature_8 <- as.integer(df$feature_8)
-```
 
-##### Creating a new column to reprsent the age of the car
-
-```{r}
+# Create a new column to reprsent the age of the car
+# age is calculated by subtracting the year it was sold and the registration year
 df$sold_at <- as.Date(df$sold_at)
 df$registration_date <- as.Date(df$registration_date)
-
 df$age <- df$sold_at - df$registration_date
-
 df$age <- as.numeric(df$age)
-```
 
-##### Removing registration date and selling date columns
-
-```{r}
-
+# Removing registration date and selling date columns
 df <- df[, !(names(df) %in% c('registration_date', 'sold_at'))]
 
-```
-
-##### Removing fuel types not needed for this analysis
-
-```{r}
+# Removing fuel types not needed for this analysis
 df <- df[!(df$fuel == 'hybrid_petrol' | df$fuel == 'electro'),]
 ```
 
-## Analysis
+# 4) Analysis
 
-### Correlation Test
+## 4.1) Correlation Test
 
-Price and Age
+### Price and Age
 
 ```{r}
-res <- cor.test(df$price, df$age, method='pearson')
+res <- cor.test(df$price, df$age, method = 'pearson')
 res$estimate
 ```
 
-Price and Age have a slight negative relationship, i.e every time age decreases the price increases
+Price and Age have a slight negative relationship, i.e. every time age decreases the price increases
 
-Price and Mileage
+### Price and Mileage
 
 ```{r}
-res <- cor.test(df$price, df$mileage, method='pearson')
+res <- cor.test(df$price, df$mileage, method = 'pearson')
 res$estimate
 ```
 
-Price and Mileage have a slight negative relationship, i.e every time mileage decreases the price increases
+Price and Mileage have a slight negative relationship, i.e. every time mileage decreases the price increases
+
+### Price and Horse Power
 
 ```{r}
-res <- cor.test(df$price, df$engine_power, method='pearson')
+res <- cor.test(df$price, df$engine_power, method = 'pearson')
 res$estimate
 ```
 
-Price and Mileage have a good positive relationship, i.e every time engine power increases the price also increases
+Price and Horse Power has a good positive relationship
 
-### Correlation plot
+## 4.2) Correlation plot
 
 ```{r}
-factors <- df[,c('mileage', 'engine_power', 'feature_1', 'feature_2', 'feature_3', 'feature_4', 'feature_5', 'feature_6', 'feature_7', 'feature_8', 'price', 'age')]
+factors <- df[, c('mileage', 'engine_power', 'feature_1', 'feature_2', 'feature_3', 'feature_4', 'feature_5', 'feature_6', 'feature_7', 'feature_8', 'price', 'age')]
 
 corr <- cor(factors)
 p.mat <- cor_pmat(factors)
@@ -111,9 +96,13 @@ corr.plot <- ggcorrplot(corr, hc.order = FALSE, type = "lower", outline.col = "w
 ggplotly(corr.plot)
 ```
 
-As can be seen there seem to be no evidence of multi-colinearity as no variables is correlated to each other significantly.We can also see that correlation coefficient of any independent variable to the dependent price variable is not higher than 0.65 and hence we can say that none of the independent variables have particularly strong relationship with the price variable.
+As can be seen there seem to be no evidence of multi-linearity as no variables is correlated to each other
+significantly. We can also see that correlation coefficient of any independent variable to the dependent price
+variable is not higher than 0.65, except feature_8 and hence we can say that none of the independent variables have
+particularly strong relationship with the price variable.
 
-### ANOVA
+## 4.3) ANOVA
+
 ```{r}
 one.way <- aov(price ~ fuel, data = df)
 
@@ -121,7 +110,12 @@ summary(one.way)
 
 ```
 
-The f-statistic for fuel is 4.578, hence it is more likey it is the variation casued by the variable fuel to price is due to chance
+The f-statistic for fuel is 4.578, hence it is more likely that the variation caused by the variable fuel to
+price is due to chance
+
+## 4.4) ANOVA with multiple variables
+
+### 4.4.1) Mileage and Age
 
 ```{r}
 two.way <- aov(price ~ mileage + age, data = df)
@@ -129,73 +123,82 @@ two.way <- aov(price ~ mileage + age, data = df)
 summary(two.way)
 ```
 
-Here, the f-statistic for mileage and age is high. Hence, it is more likey that the variation caused by these variables to price are real and not due to chance.
+Here, the f-statistic for mileage and age is high. Hence, it is more likely that the variation caused by these
+variables to price are real and not due to chance.
 
-### Scatter plot of features with highest correlation
+## 4.5) Scatter plot of features with the highest correlation
 
-##### Regression plot for price and engine power
+### 4.5.1) Regression plot for price and engine power
+
 ```{r}
 df1 <- sample_n(df, 500)
 fit <- lm(price ~ engine_power, data = df1)
 
 fig <- df1 %>%
-  plot_ly(x = ~engine_power, y = ~price, size = ~price, color = ~price, type = 'scatter', mode = 'markers', alpha=0.75, name='Scatter points') %>%
+  plot_ly(x = ~engine_power, y = ~price, size = ~price, color = ~price, type = 'scatter', mode = 'markers', alpha = 0.75, name = 'Scatter points') %>%
   layout(title = "Engine Power vs Price",
-         xaxis = list(title = 'Engine Power', dtick=20, range= c(60, 350)),
-         yaxis = list(title = 'Price', dtick=10000, range = c(0, 80000))) %>%
-  add_trace(x = ~engine_power, y = fitted(fit), mode = 'lines', alpha = 1, line = list(color = '#F2CE16', width = 4), name='Regression Line')
+         xaxis = list(title = 'Engine Power', dtick = 20, range = c(60, 350)),
+         yaxis = list(title = 'Price', dtick = 10000, range = c(0, 80000))) %>%
+  add_trace(x = ~engine_power, y = fitted(fit), mode = 'lines', alpha = 1, line = list(color = '#F2CE16', width = 4), name = 'Regression Line')
 fig
 ```
 
-##### Regression plot for price and mileage
+As seen above, the regression line is a decent fit for the data. Engine power is trending towards the price.
+
+### 4.5.2) Regression plot for price and mileage
+
 ```{r}
 fit <- lm(price ~ mileage, data = df1)
 
 fig <- df1 %>%
-  plot_ly(x = ~mileage, y = ~price, size = ~price, color = ~price, type = 'scatter', mode = 'markers', alpha=0.75, name='Scatter points') %>%
+  plot_ly(x = ~mileage, y = ~price, size = ~price, color = ~price, type = 'scatter', mode = 'markers', alpha = 0.75, name = 'Scatter points') %>%
   layout(title = "Mileage vs Price",
-         xaxis = list(title = 'Mileage', dtick=30000, range= c(0, 400000)),
-         yaxis = list(title = 'Price', dtick=10000, range = c(0, 80000))) %>%
-  add_trace(x = ~mileage, y = fitted(fit), mode = 'lines', alpha = 1, line = list(color = '#F2CE16', width = 4), name='Regression Line')
+         xaxis = list(title = 'Mileage', dtick = 30000, range = c(0, 400000)),
+         yaxis = list(title = 'Price', dtick = 10000, range = c(0, 80000))) %>%
+  add_trace(x = ~mileage, y = fitted(fit), mode = 'lines', alpha = 1, line = list(color = '#F2CE16', width = 4), name = 'Regression Line')
 fig
 ```
 
-##### Regression plot for price and age
+Mileage is trending opposite to the price. This is because price decreases as mileage increases. This is expected
+because price decreases as the car is used.
+
+### 4.5.3) Regression plot for price and age
 
 ```{r}
 fit <- lm(price ~ age, data = df1)
 
 fig <- df1 %>%
-  plot_ly(x = ~age, y = ~price, size = ~price, color = ~price, type = 'scatter', mode = 'markers', alpha=0.75, name='Scatter points') %>%
+  plot_ly(x = ~age, y = ~price, size = ~price, color = ~price, type = 'scatter', mode = 'markers', alpha = 0.75, name = 'Scatter points') %>%
   layout(title = "Mileage vs Price",
-         xaxis = list(title = 'Mileage', dtick=1000, range= c(0, 6000)),
-         yaxis = list(title = 'Price', dtick=10000, range = c(0, 80000))) %>%
-  add_trace(x = ~age, y = fitted(fit), mode = 'lines', alpha = 1, line = list(color = '#F2CE16', width = 4), name='Regression Line')
+         xaxis = list(title = 'Mileage', dtick = 1000, range = c(0, 6000)),
+         yaxis = list(title = 'Price', dtick = 10000, range = c(0, 80000))) %>%
+  add_trace(x = ~age, y = fitted(fit), mode = 'lines', alpha = 1, line = list(color = '#F2CE16', width = 4), name = 'Regression Line')
 fig
 ```
 
-Independent variables age, mileage, engine power are some what related to dependent variable price.However, there seem to be many outliers
+In conclusion, independent variables age, mileage, engine power are somewhat related to dependent variable price.
+However, there seems to be many outliers
 
-### Formal test
+## 4.6) Formal test
 
 1.Set up the hypotheses and select the alpha level
 
-H0:β Predictors = 0 (None of the Independent variables are not Predictors of Price)
+H0:β Predictors = 0 (None of the Independent variables are Predictors of Price)
 
-H1: β Predictors ≠ 0 (at least one of the slope coefficients is different than 0 and is a predictor of Price) α = 0.05
+H1: β Predictors ≠ 0 (at least one of the slope coefficients is different from 0 and is a predictor of Price) α = 0.05
 
-2.Select the appropriate test statistic (we are going to use a F-test statistic).
+2.Select the appropriate test statistic (I am going to use F-test statistic).
 
 3.State the decision rule
 
-Reject H0 if p−value <= α. Otherwise, do not reject H0
+Reject H0 if p−value <= F-statistic. Otherwise, do not reject H0
 
 4.Compute the test statistic and the associated p-value.
 
 ```{r}
-factors <- df[,c('mileage', 'fuel', 'model_key',  'engine_power', 'feature_1', 'feature_2', 'feature_3', 'feature_4', 'feature_5', 'feature_6', 'feature_7', 'feature_8', 'price', 'age')]
+factors <- df[, c('mileage', 'fuel', 'model_key', 'engine_power', 'feature_1', 'feature_2', 'feature_3', 'feature_4', 'feature_5', 'feature_6', 'feature_7', 'feature_8', 'price', 'age')]
 
-m <- lm(formula = price ~ mileage + engine_power + age , data = factors)
+m <- lm(formula = price ~ mileage + engine_power + age, data = factors)
 
 summary(m)
 ```
@@ -223,10 +226,10 @@ As seen from the model above, The R sqaured value increased when we used all the
 
 ```{r}
 res = resid(m)
-fig <- plot_ly(x = fitted(m), y = res, type = 'scatter', mode = 'markers', alpha=0.75) %>%
+fig <- plot_ly(x = fitted(m), y = res, type = 'scatter', mode = 'markers', alpha = 0.75) %>%
   layout(title = "Residual vs Fitted values",
-         xaxis = list(title = 'Fitted values', dtick=10000, range= c(-10000, 80000)),
-         yaxis = list(title = 'Residual', dtick=10000, range = c(-20000, 20000)))
+         xaxis = list(title = 'Fitted values', dtick = 10000, range = c(-10000, 80000)),
+         yaxis = list(title = 'Residual', dtick = 10000, range = c(-20000, 20000)))
 fig
 ```
 
@@ -244,21 +247,21 @@ boxplot(df$price)$out
 ##### Visualizing outliers
 
 ```{r}
-fig <- plot_ly(y = df$price, type = 'box', mode = 'markers', alpha=0.75)
+fig <- plot_ly(y = df$price, type = 'box', mode = 'markers', alpha = 0.75)
 fig
 ```
 
 ##### Eliminating outliers
 
 ```{r}
-Q <- quantile(df$price, probs=c(.25, .75), na.rm = FALSE)
+Q <- quantile(df$price, probs = c(.25, .75), na.rm = FALSE)
 
 iqr <- IQR(df$price)
 
-up <-  Q[2] + 1.5 * iqr
+up <- Q[2] + 1.5 * iqr
 low <- Q[1] - 1.5 * iqr
 
-df2 <- subset(factors, df$price > (Q[1] - 1.5*iqr) & df$price < (Q[2]+1.5*iqr))
+df2 <- subset(factors, df$price > (Q[1] - 1.5 * iqr) & df$price < (Q[2] + 1.5 * iqr))
 ```
 
 Linear model after elimination of outliers
@@ -266,14 +269,14 @@ Linear model after elimination of outliers
 Test and Train split
 
 ```{r}
-df3 = sort(sample(nrow(df2), nrow(df2)*0.7))
+df3 = sort(sample(nrow(df2), nrow(df2) * 0.7))
 train <- df2[df3,]
-test<- df2[-df3,]
+test <- df2[-df3,]
 
 m <- lm(formula = price ~ ., data = train)
 summary(m)
 
-result <- data.frame(Actual=train$price, Predicted=predict(m))
+result <- data.frame(Actual = train$price, Predicted = predict(m))
 head(result)
 
 ```
