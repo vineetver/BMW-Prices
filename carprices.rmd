@@ -220,12 +220,13 @@ m <- lm(formula = price ~ ., data = factors)
 summary(m)
 ```
 
-As seen from the model above, The R sqaured value increased when we used all the features. Hence, the model is much more concice using all the factors
+As seen from the model above, The R-squared value increased when we used all the features. Hence, the model is much
+better using all the factors
 
-#### Residual Analysis
+## 4.7) Residual Analysis
 
 ```{r}
-res = resid(m)
+res <- resid(m)
 fig <- plot_ly(x = fitted(m), y = res, type = 'scatter', mode = 'markers', alpha = 0.75) %>%
   layout(title = "Residual vs Fitted values",
          xaxis = list(title = 'Fitted values', dtick = 10000, range = c(-10000, 80000)),
@@ -235,23 +236,23 @@ fig
 
 As evident from the plot above, there appears to be no apparent association between data points and the model seems to be good.
 
-The residuals, even though they are clustered with some outliners, seems reasonable.
+The residuals, even though they are clustered with some outliers, seem reasonable.
 
 
-##### Finding outliers
+### 4.7.1) Finding outliers
 
 ```{r}
 boxplot(df$price)$out
 ```
 
-##### Visualizing outliers
+### 4.7.2) Visualizing outliers
 
 ```{r}
 fig <- plot_ly(y = df$price, type = 'box', mode = 'markers', alpha = 0.75)
 fig
 ```
 
-##### Eliminating outliers
+### 4.7.3) Eliminating outliers
 
 ```{r}
 Q <- quantile(df$price, probs = c(.25, .75), na.rm = FALSE)
@@ -269,15 +270,12 @@ Linear model after elimination of outliers
 Test and Train split
 
 ```{r}
-df3 = sort(sample(nrow(df2), nrow(df2) * 0.7))
+df3 <- sort(sample(nrow(df2), nrow(df2) * 0.7))
 train <- df2[df3,]
 test <- df2[-df3,]
 
 m <- lm(formula = price ~ ., data = train)
 summary(m)
-
-result <- data.frame(Actual = train$price, Predicted = predict(m))
-head(result)
 
 ```
 
@@ -285,11 +283,17 @@ When we remove the outliers and construct our final linear model with the featur
 
 Even though 0.77 can be an acceptable performance, our model performed poorly on lower priced cars. however, a better sampling/splitting method could result in even better performance.
 
+## 4.8) Making predictions
 
+```{r}
+result <- data.frame(Actual = train$price, Predicted = predict(m))
+head(result)
+```
 
-## Summary
+## 4.9) Summary
 
-When sampling the dataset some variables were not sampled properly like fuel type electro and hybrid. Hence, they were removed Some columns with boolean values needed to be changed to numeric for linear regression to work. Some of the values for price column were zero, which is not possible.When analysing correlations, we found that fuel type was not a major predictor of price and model type was a major predictor. We found this by trial and error because model_key is a categorical variable
+When sampling the dataset some variables were not sampled properly like fuel type electro and hybrid. Hence, they
+were removed Some columns with boolean values needed to be changed to numeric for linear regression to work. Some values for price column were zero, which is not possible. When analysing correlations, we found that fuel type was not a major predictor of price and model type was a major predictor. We found this by trial and error because model_key is a categorical variable
 
 Even though 0.77 can be an acceptable performance, our model performed poorly on lower priced cars. However, a better sampling/splitting method could result in even better performance.
 

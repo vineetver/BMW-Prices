@@ -1,4 +1,13 @@
-## About
+<h2 align="center"> BMW Prices </h2>
+
+## Task Description
+
+The task is to analyze the used car prices of the BMW brand. This is a regression task because we are trying to 
+predict the price of the car. To measure the quality of fit of the model, we will use the [R-squared](https://en.wikipedia.org/wiki/Coefficient_of_determination) 
+
+The current best model is a linear regression model with a R-squared of 0.77.
+
+## About the data
 
 The dataset consists of 5000 rows and 18 columns.
 
@@ -6,11 +15,7 @@ The data contains 5000 BMW cars that were sold via a auction in 2018. There are 
 
 The dataset: https://www.kaggle.com/danielkyrka/bmw-pricing-challenge
 
-I built a machine learning model to predict the prices of used BMW cars and In conclusion, the model performed reasonably well, with an R² of 0.7. In other words, my model was better than flipping a coin in predicting the prices of used BMW cars.
-
-## Getting Started
-
-### Dependancies
+## Dependencies
 
 List of all the libraries you need to run the code.
 
@@ -21,16 +26,13 @@ library(ggcorrplot)
 library(plotly)
   ```
 
-
-<!-- USAGE EXAMPLES -->
 ## Usage
 
 RStudio > Open file > project_vineet_verma.R / project_vineet_verma.Rmd
 
-### View code
+## View code
 
 [Rpub](https://rpubs.com/vineetver/872494)
-
 
 ## License
 
